@@ -1024,14 +1024,6 @@ namespace shader_resource_internal
 		}
 	};
 
-	// Returns 0 if success.
-	static int from_hex(s64 &val, const char *hex)
-	{
-		errno = 0;
-		val = strtol(hex, NULL, 16);
-		return !(errno != ERANGE && errno != EINVAL);
-	}
-
 	struct ShaderCompiler
 	{
 		CompileOptions &_opts;
