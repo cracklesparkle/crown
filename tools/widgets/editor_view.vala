@@ -31,6 +31,8 @@ public class EditorView : Gtk.EventBox
 	public bool _mouse_right;
 	public double _flythrough_mouse_x;
 	public double _flythrough_mouse_y;
+	public double _flythrough_anchor_x;
+	public double _flythrough_anchor_y;
 
 	public uint _window_id;
 	public uint _last_window_id;
@@ -96,6 +98,8 @@ public class EditorView : Gtk.EventBox
 		_mouse_right  = false;
 		_flythrough_mouse_x = 0.0;
 		_flythrough_mouse_y = 0.0;
+		_flythrough_anchor_x = 0.0;
+		_flythrough_anchor_y = 0.0;
 
 		_window_id = 0;
 		_last_window_id = 0;
@@ -305,8 +309,8 @@ public class EditorView : Gtk.EventBox
 			_buffer.append("LevelEditor:camera_drag_start('flythrough')");
 			_flythrough_mouse_x = x;
 			_flythrough_mouse_y = y;
-			int center_x = _allocation.width / 2;
-			int center_y = _allocation.height / 2;
+			_flythrough_anchor_x = x;
+			_flythrough_anchor_y = y;
 
 			if (_tick_callback_id == 0)
 				_tick_callback_id = add_tick_callback(on_tick);
@@ -315,14 +319,6 @@ public class EditorView : Gtk.EventBox
 				GLib.Source.remove(_enable_accels_id);
 
 			this.get_window().set_cursor(new Gdk.Cursor.from_name(this.get_display(), "none"));
-			int root_x;
-			int root_y;
-			this.get_window().get_origin(out root_x, out root_y);
-			this.get_display().get_default_seat().get_pointer().warp(this.get_display().get_default_screen()
-				, root_x + center_x
-				, root_y + center_y
-				);
-
 			((LevelEditorApplication)GLib.Application.get_default()).set_conflicting_accels(false);
 		}
 
@@ -507,15 +503,13 @@ public class EditorView : Gtk.EventBox
 
 	public bool on_tick(Gtk.Widget widget, Gdk.FrameClock frame_clock)
 	{
-		int center_x = _allocation.width / 2;
-		int center_y = _allocation.height / 2;
 		double x;
 		double y;
 		Gdk.ModifierType mask = 0;
 		this.get_window().get_device_position_double(this.get_display().get_default_seat().get_pointer(), out x, out y, out mask);
 
-		_flythrough_mouse_x += x - center_x;
-		_flythrough_mouse_y += y - center_y;
+		_flythrough_mouse_x += x - _flythrough_anchor_x;
+		_flythrough_mouse_y += y - _flythrough_anchor_y;
 
 		int scale = this.get_scale_factor();
 		_buffer.append(LevelEditorApi.set_mouse_state((int)_flythrough_mouse_x*scale
@@ -531,8 +525,8 @@ public class EditorView : Gtk.EventBox
 		int root_y;
 		this.get_window().get_origin(out root_x, out root_y);
 		this.get_display().get_default_seat().get_pointer().warp(this.get_display().get_default_screen()
-			, root_x + center_x
-			, root_y + center_y
+			, root_x + (int)_flythrough_anchor_x
+			, root_y + (int)_flythrough_anchor_y
 			);
 
 		_runtime.send(DeviceApi.frame());
