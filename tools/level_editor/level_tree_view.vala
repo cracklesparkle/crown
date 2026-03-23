@@ -206,6 +206,37 @@ public class LevelTreeView : Gtk.Box
 		_tree_view.headers_clickable = false;
 		_tree_view.headers_visible = false;
 		_tree_view.model = _tree_sort;
+		_tree_view.has_tooltip = true;
+		_tree_view.query_tooltip.connect((x, y, keyboard_tooltip, tooltip) => {
+				if (keyboard_tooltip)
+					return false;
+
+				int bx;
+				int by;
+				Gtk.TreePath path;
+				Gtk.TreeViewColumn column;
+				_tree_view.convert_widget_to_bin_window_coords(x, y, out bx, out by);
+				if (!_tree_view.get_path_at_pos(bx, by, out path, out column, null, null))
+					return false;
+
+				if (column != _visibility_column && column != _lock_column)
+					return false;
+
+				Gtk.TreeIter iter;
+				if (!_tree_view.model.get_iter(out iter, path))
+					return false;
+
+				Value type;
+				_tree_view.model.get_value(iter, Column.TYPE, out type);
+				if ((int)type == ItemType.FOLDER)
+					return false;
+
+				if (column == _visibility_column)
+					tooltip.set_text("Toggle visibility.");
+				else
+					tooltip.set_text("Toggle selection lock.");
+				return true;
+			});
 
 		_gesture_click = new Gtk.GestureMultiPress(_tree_view);
 		_gesture_click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE);
